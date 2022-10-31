@@ -18,10 +18,8 @@ import { getComponent } from './figma';
 import { join } from 'path';
 
 const stringsHelper = require('jsdom/lib/jsdom/living/helpers/strings.js');
-console.log(stringsHelper);
 const asciiLowercase_ = stringsHelper.asciiLowercase;
 stringsHelper.asciiLowercase = function (name: string) {
-  console.log('asciiLowercase_ ', name);
   if (name.startsWith('[')) {
     return name;
   }
@@ -41,7 +39,6 @@ validateNames.name = function (name: string) {
 // You don't have to export the function as default. You can also have more than one rule factory
 // per file.
 export function importComponent(_options: any): Rule {
-  console.log('import component');
   return async (tree: Tree, _context: SchematicContext) => {
     let config: any;
     if (tree.exists('.figma-relay')) {

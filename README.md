@@ -2,7 +2,7 @@
 
 ## Development
 
-First start the schamtic build in watch mode
+First start the schematic build in watch mode
 ```npm run build:schematic:watch```
 
 Now link the schematic into node_modules

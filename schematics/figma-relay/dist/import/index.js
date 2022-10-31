@@ -41,10 +41,8 @@ const workspace_1 = require("@schematics/angular/utility/workspace");
 const figma_1 = require("./figma");
 const path_1 = require("path");
 const stringsHelper = require('jsdom/lib/jsdom/living/helpers/strings.js');
-console.log(stringsHelper);
 const asciiLowercase_ = stringsHelper.asciiLowercase;
 stringsHelper.asciiLowercase = function (name) {
-    console.log('asciiLowercase_ ', name);
     if (name.startsWith('[')) {
         return name;
     }
@@ -62,7 +60,6 @@ validateNames.name = function (name) {
 // You don't have to export the function as default. You can also have more than one rule factory
 // per file.
 function importComponent(_options) {
-    console.log('import component');
     return (tree, _context) => __awaiter(this, void 0, void 0, function* () {
         let config;
         if (tree.exists('.figma-relay')) {
