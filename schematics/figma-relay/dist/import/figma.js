@@ -95,7 +95,10 @@ function transformComponent(node) {
                             url: `${relativeAssetDir}/${imageFill.imageRef}.png`
                         };
                     }
-                    console.log('ADD SHAPE');
+                    else {
+                        const solidFill = node.fills.find((fill) => fill.type === 'SOLID');
+                        shape.fillColor = color2Css(solidFill.color);
+                    }
                     renderNode.shapes = [
                         shape
                     ];

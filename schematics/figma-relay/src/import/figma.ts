@@ -80,9 +80,12 @@ async function transformComponent(node: any) {
           shape.imagePattern = {
             url: `${relativeAssetDir}/${imageFill.imageRef}.png`
           }
+        } else {
+          const solidFill = node.fills.find((fill: any) => fill.type === 'SOLID');
+          shape.fillColor = color2Css(solidFill.color);
         }
 
-        console.log('ADD SHAPE');
+
         renderNode.shapes = [
           shape
         ];
