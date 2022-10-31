@@ -1,0 +1,6 @@
+
+/dist
+.figma-relay
+.angular
+/node_modules
+/schematics/figma-relay/node_modules

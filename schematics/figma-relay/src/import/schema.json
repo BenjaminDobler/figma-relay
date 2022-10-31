@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "$id": "figma-component-importer d",
+    "title": "Figma component importer",
+    "description": "imports a figma component as an angular component d.",
+    "type": "object",
+    "properties": {
+        "token": {
+            "description": "Your Figma API token.",
+            "type": "string"
+        }
+    },
+    "required": [],
+    "additionalProperties": false
+}

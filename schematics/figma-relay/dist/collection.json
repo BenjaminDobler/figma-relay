@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "import": {
+      "description": "imports a component.",
+      "factory": "./import/index#importComponent",
+      "schema": "./import/schema.json"
+
+    }
+  }
+}

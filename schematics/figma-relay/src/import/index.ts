@@ -1,0 +1,261 @@
+import {
+  Rule,
+  SchematicContext,
+  Tree,
+  url,
+  template,
+  apply,
+  mergeWith,
+  move,
+  chain,
+  MergeStrategy,
+} from '@angular-devkit/schematics';
+import * as inquirer from 'inquirer';
+// import * as Figma from 'figma-api';
+import { strings } from '@angular-devkit/core';
+import { getWorkspace } from '@schematics/angular/utility/workspace';
+import { getComponent } from './figma';
+import { join } from 'path';
+
+const stringsHelper = require('jsdom/lib/jsdom/living/helpers/strings.js');
+console.log(stringsHelper);
+const asciiLowercase_ = stringsHelper.asciiLowercase;
+stringsHelper.asciiLowercase = function (name: string) {
+  console.log('asciiLowercase_ ', name);
+  if (name.startsWith('[')) {
+    return name;
+  }
+  return asciiLowercase_(name);
+};
+import { JSDOM } from 'jsdom';
+
+const validateNames = require('jsdom/lib/jsdom/living/helpers/validate-names.js');
+
+const name_ = validateNames.name;
+validateNames.name = function (name: string) {
+  try {
+    name_(name);
+  } catch {}
+};
+
+// You don't have to export the function as default. You can also have more than one rule factory
+// per file.
+export function importComponent(_options: any): Rule {
+  console.log('import component');
+  return async (tree: Tree, _context: SchematicContext) => {
+    let config: any;
+    if (tree.exists('.figma-relay')) {
+      config = tree.readJson('.figma-relay');
+    } else {
+      console.log('figma config does not exist!');
+
+      const question = [
+        {
+          message: 'Please provide your Figma API token.',
+          name: 'token',
+        },
+      ];
+      const answer = await inquirer.prompt(question);
+
+      config = { token: answer.token };
+
+      const fileQustion = [
+        {
+          message: 'Please provide the link to your Figma file.',
+          name: 'file',
+        },
+      ];
+      const fileAnswer = await inquirer.prompt(fileQustion);
+      config.file = fileAnswer.file;
+      tree.create('.figma-relay', JSON.stringify(config));
+    }
+
+    if (!config.file) {
+      const fileQustion = [
+        {
+          message: 'Please provide the link to your Figma file.',
+          name: 'file',
+        },
+      ];
+      const fileAnswer = await inquirer.prompt(fileQustion);
+      config.file = fileAnswer.file;
+      tree.overwrite('.figma-relay', JSON.stringify(config));
+    }
+
+    let fileKey = config.file.substring(27);
+    fileKey = fileKey.substring(0, fileKey.indexOf('/'));
+
+    const workspace = await getWorkspace(tree);
+    const project = workspace.projects.get('demo');
+
+    const srcRoot = project?.sourceRoot as string;
+
+    const componentTransforms = await getComponent(
+      join(srcRoot, 'assets', 'figma-relay'),
+      '/assets/figma-relay',
+      fileKey,
+      config.token
+    );
+
+    const chainsOps = [];
+    for (let component of componentTransforms) {
+      const options = getComponentOptions(component);
+      chainsOps.push(addFiles(options, project?.sourceRoot as string));
+    }
+    return chain(chainsOps);
+  };
+}
+
+function addFiles(options: any, outDir: string) {
+  return mergeWith(
+    apply(url(`./files`), [
+      template({
+        tmpl: '',
+        ...options,
+        ...strings,
+      }),
+      move(outDir + '/app/generated/'),
+    ]),
+    MergeStrategy.Overwrite
+  );
+}
+
+function getComponentOptions(component: any) {
+  const inputs: any = [];
+
+  component.renderNode.isRoot = true;
+
+  let dom = new JSDOM('');
+  const document = dom.window.document;
+
+  const getContent = (renderNode: any) => {
+    const tag = document.createElement('div');
+    tag.classList.add(renderNode.id);
+    renderNode.inputs.forEach((input: any) => {
+      if (input.bindingType === 'STYLE') {
+        inputs.push({
+          type: input.type,
+          name: input.name,
+          default: input.default,
+        });
+
+        tag.setAttribute(
+          `[style.${input.bindingName}]`,
+          `${input.name} + '${input.bindingUnit}'`
+        );
+      }
+    });
+
+    if (renderNode.shapes) {
+      renderNode.shapes.forEach((shape: any) => {
+        let svgElement = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
+        );
+        svgElement.setAttribute('width', '413');
+        svgElement.setAttribute('height', '392');
+        svgElement.setAttribute('viewBox', '0 0 413 392');
+
+        let path = document.createElement('path');
+        path.setAttribute('d', shape.path);
+        path.setAttribute('fill', '#00ff00'); // TODO find real value
+        svgElement.appendChild(path);
+
+        if (shape.imagePattern) {
+          const patternID = 'pattern0';
+          const imageID = 'image0';
+          let defs = document.createElement('defs');
+          let pattern = document.createElement('pattern');
+          pattern.setAttribute('id', patternID);
+          pattern.setAttribute('patternContentUnits', 'objectBoundingBox');
+          pattern.setAttribute('width', '1');
+          pattern.setAttribute('height', '1');
+          path.setAttribute('fill', `url(#${patternID})`);
+          defs.appendChild(pattern);
+          let use = document.createElement('use');
+          use.setAttribute('xlink:href', '#' + imageID);
+          pattern.appendChild(use);
+          let image = document.createElement('image');
+          image.setAttribute('id', imageID);
+          image.setAttribute('xlink:href', shape.imagePattern.url);
+          image.setAttribute('width', '378'); // TODO find real value
+          image.setAttribute('height', '378'); // TODO find real value
+          defs.appendChild(image);
+          svgElement.appendChild(defs);
+        }
+        tag.appendChild(svgElement);
+
+      });
+    }
+
+    if (renderNode.children) {
+      renderNode.children.forEach((childNode: any) => {
+        const childTag = getContent(childNode);
+        tag.appendChild(childTag);
+      });
+    }
+
+    if (renderNode.type === 'TEXT') {
+      if (
+        renderNode.parameters &&
+        renderNode.parameters.find((p: any) => p.property === 'text-content')
+      ) {
+        const param = renderNode.parameters.find(
+          (p: any) => p.property === 'text-content'
+        );
+        tag.textContent = '{{' + param.name + '}}';
+        let textType = 'string';
+        if (param.description?.startsWith('type:')) {
+          textType = param.description.split(':')[1];
+        }
+        inputs.push({
+          type: textType,
+          name: param.name,
+          default:
+            textType === 'string'
+              ? `'${renderNode.content}'`
+              : `${renderNode.content}`,
+        });
+      } else if (renderNode.content) {
+        tag.textContent = renderNode.content;
+      }
+    }
+    return tag;
+  };
+
+  const rootTag = getContent(component.renderNode);
+  document.body.appendChild(rootTag);
+  const htmlContent = document.body.innerHTML;
+
+  let style = '';
+  const getClass = (renderNode: any) => {
+    style += '.' + renderNode.id + ' {\n';
+    for (let i in renderNode.css) {
+      style += '\t' + i + ':' + renderNode.css[i] + ';\n';
+    }
+    style += '}\n';
+    if (renderNode.children) {
+      renderNode.children.forEach((childNode: any) => {
+        getClass(childNode);
+      });
+    }
+  };
+
+  getClass(component.renderNode);
+
+  const options: any = {
+    name: component.renderNode.name.split(' ').join(''),
+  };
+
+  const inputString = inputs.reduce((prev: any, curr: any) => {
+    return prev + `  @Input()\n${curr.name}:${curr.type}=${curr.default}; \n`;
+  }, '');
+
+  options.htmlContent = htmlContent;
+  options.css = style;
+  options.inputs = inputs;
+  options.inputString = inputString;
+
+  options.renderNode = component.renderNode;
+  return options;
+}
