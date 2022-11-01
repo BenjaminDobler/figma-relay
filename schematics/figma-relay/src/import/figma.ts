@@ -1,15 +1,15 @@
 // https://www.figma.com/file/gohZuvON9qmHoSnEYsW5Vo/HelloFigma?node-id=0%3A1
 
-import axios from 'axios';
-import { ensureDirSync, writeFileSync } from 'fs-extra';
-import * as Figma from 'figma-api';
-import { Node, CANVAS } from 'figma-api';
-import { join } from 'path';
+import axios from "axios";
+import { ensureDirSync, writeFileSync } from "fs-extra";
+import * as Figma from "figma-api";
+import { Node, CANVAS } from "figma-api";
+import { join } from "path";
 
-const outDir = './output';
-let assetDir = './output/assets/';
-let relativeAssetDir = '';
-const relayPluginID = '1041056822461507786';
+const outDir = "./output";
+let assetDir = "./output/assets/";
+let relativeAssetDir = "";
+const relayPluginID = "1041056822461507786";
 
 export interface ColorStyle {
   r: number;
@@ -19,7 +19,7 @@ export interface ColorStyle {
 }
 
 async function downloadFile(source: string, destination: string) {
-  const res = await axios.get(source, { responseType: 'arraybuffer' });
+  const res = await axios.get(source, { responseType: "arraybuffer" });
   writeFileSync(destination, res.data);
 }
 
@@ -33,12 +33,10 @@ async function transformComponent(node: any) {
   const transformNode = async (node: any, css: any, parent?: any) => {
     const renderNode: any = {};
 
-    console.log(node.type);
-
     const nodeID =
-      node.name.split(' ').join('-').toLowerCase() +
-      '-' +
-      node.id.replace(':', '-');
+      node.name.split(" ").join("-").toLowerCase() +
+      "-" +
+      node.id.replace(":", "-");
 
     renderNode.id = nodeID;
     renderNode.type = node.type;
@@ -49,53 +47,49 @@ async function transformComponent(node: any) {
       const relayData = node.pluginData[relayPluginID];
       if (relayData.parameters) {
         const parameters = JSON.parse(relayData.parameters);
-        console.log(parameters);
         renderNode.parameters = parameters;
       }
 
       if (relayData.interactions) {
         const interactions = JSON.parse(relayData.interactions);
-        console.log(interactions);
         renderNode.interactions = interactions;
       }
     }
 
     let nodeCSS: any = {};
 
-    nodeCSS['box-sizing'] = 'border-box';
+    nodeCSS["box-sizing"] = "border-box";
 
-    if (node.type === 'RECTANGLE') {
+    if (node.type === "RECTANGLE") {
     }
 
-    if (node.type === 'STAR' || node.type === 'REGULAR_POLYGON') {
+    if (node.type === "STAR" || node.type === "REGULAR_POLYGON") {
       if (node.fillGeometry) {
         const geometry = node.fillGeometry[0];
         const shape: any = {};
         shape.path = geometry.path;
 
-
-        const imageFill = node.fills.find((fill: any) => fill.type === 'IMAGE');
+        const imageFill = node.fills.find((fill: any) => fill.type === "IMAGE");
         if (imageFill) {
           imageFill.imageRef;
           shape.imagePattern = {
-            url: `${relativeAssetDir}/${imageFill.imageRef}.png`
-          }
+            url: `${relativeAssetDir}/${imageFill.imageRef}.png`,
+          };
         } else {
-          const solidFill = node.fills.find((fill: any) => fill.type === 'SOLID');
+          const solidFill = node.fills.find(
+            (fill: any) => fill.type === "SOLID"
+          );
           shape.fillColor = color2Css(solidFill.color);
         }
 
-
-        renderNode.shapes = [
-          shape
-        ];
+        renderNode.shapes = [shape];
       }
     }
 
-    if (node.type === 'TEXT') {
-      nodeCSS['font-family'] = node.style.fontFamily;
-      nodeCSS['font-weight'] = node.style.fontWeight;
-      nodeCSS['font-size'] = node.style.fontSize + 'px';
+    if (node.type === "TEXT") {
+      nodeCSS["font-family"] = node.style.fontFamily;
+      nodeCSS["font-weight"] = node.style.fontWeight;
+      nodeCSS["font-size"] = node.style.fontSize + "px";
       renderNode.content = node.characters;
       //           "fontPostScriptName": "MontserratRoman-Bold",
       //           "textAutoResize": "WIDTH_AND_HEIGHT",
@@ -109,28 +103,27 @@ async function transformComponent(node: any) {
       // node.charachter is the content!
     }
 
-    const imageFill = node.fills.find((fill: any) => fill.type === 'IMAGE');
-    console.log("FILL GEO", node.fillGeometry); 
+    const imageFill = node.fills.find((fill: any) => fill.type === "IMAGE");
     if (imageFill && !renderNode.shapes) {
       imageFill.imageRef;
       nodeCSS.background = `url(${relativeAssetDir}/${imageFill.imageRef}.png)`;
-      nodeCSS['background-size'] = 'cover';
-      nodeCSS['background-position'] = 'center';
+      nodeCSS["background-size"] = "cover";
+      nodeCSS["background-position"] = "center";
     }
 
     renderNode.inputs = [];
     if (node.cornerRadius) {
-      nodeCSS['border-radius'] = node.cornerRadius + 'px';
+      nodeCSS["border-radius"] = node.cornerRadius + "px";
       const borderRadiusParameter = renderNode.parameters.find(
-        (p: any) => p.property === 'border-radius'
+        (p: any) => p.property === "border-radius"
       );
       if (borderRadiusParameter) {
         renderNode.inputs.push({
           name: borderRadiusParameter.name,
           type: borderRadiusParameter.type,
-          bindingType: 'STYLE',
-          bindingName: 'borderRadius',
-          bindingUnit: 'px',
+          bindingType: "STYLE",
+          bindingName: "borderRadius",
+          bindingUnit: "px",
           default: node.cornerRadius,
         });
       }
@@ -139,58 +132,58 @@ async function transformComponent(node: any) {
     if (node.strokes && node.strokes.length > 0) {
       const stroke = node.strokes[0];
       const borderColor = color2Css(stroke.color);
-      nodeCSS.border = node.strokeWeight + 'px solid ' + borderColor;
+      nodeCSS.border = node.strokeWeight + "px solid " + borderColor;
     }
 
-    if (node.layoutMode !== 'NONE') {
+    if (node.layoutMode !== "NONE") {
       // we have autolayout
-      nodeCSS.display = 'flex';
-      nodeCSS['flex-direction'] =
-        node.layoutMode === 'VERTICAL' ? 'column' : 'row';
+      nodeCSS.display = "inline-flex";
+      nodeCSS["flex-direction"] =
+        node.layoutMode === "VERTICAL" ? "column" : "row";
       if (node.itemSpacing) {
-        nodeCSS.gap = node.itemSpacing + 'px';
+        nodeCSS.gap = node.itemSpacing + "px";
       }
     }
+    nodeCSS.width = node.absoluteBoundingBox.width + "px";
+    nodeCSS.height = node.absoluteBoundingBox.height + "px";
     if (
       ((node.paddingLeft === node.paddingRight) === node.paddingBottom) ===
       node.paddingTop
     ) {
-      nodeCSS.padding = node.paddingLeft + 'px';
+      nodeCSS.padding = node.paddingLeft - node.strokeWeight + "px";
     } else {
       if (node.paddingLeft) {
-        nodeCSS['padding-left'] = node.paddingLeft + 'px';
+        nodeCSS["padding-left"] = node.paddingLeft - node.strokeWeight + "px";
       }
       if (node.paddingRight) {
-        nodeCSS['padding-right'] = node.paddingRight + 'px';
+        nodeCSS["padding-right"] = node.paddingRight - node.strokeWeight + "px";
       }
       if (node.paddingTop) {
-        nodeCSS['padding-top'] = node.paddingTop + 'px';
+        nodeCSS["padding-top"] = node.paddingTop - node.strokeWeight + "px";
       }
       if (node.paddingBottom) {
-        nodeCSS['padding-bottom'] = node.paddingBottom + 'px';
+        nodeCSS["padding-bottom"] =
+          node.paddingBottom - node.strokeWeight + "px";
       }
     }
 
     if (node.backgroundColor) {
-      nodeCSS['background-color'] = color2Css(node.backgroundColor);
+      nodeCSS["background-color"] = color2Css(node.backgroundColor);
 
       const bgColorParameter = renderNode.parameters.find(
-        (p: any) => p.property === 'background-color'
+        (p: any) => p.property === "background-color"
       );
       if (bgColorParameter) {
         renderNode.inputs.push({
           name: bgColorParameter.name,
-          type: 'string', // the relay plugin has type color
-          bindingType: 'STYLE',
-          bindingName: 'backgroundColor',
-          bindingUnit: '',
+          type: "string", // the relay plugin has type color
+          bindingType: "STYLE",
+          bindingName: "backgroundColor",
+          bindingUnit: "",
           default: `'${color2Css(node.backgroundColor)}'`,
         });
       }
     }
-
-    nodeCSS.width = node.absoluteBoundingBox.width + 'px';
-    nodeCSS.height = node.absoluteBoundingBox.height + 'px';
 
     css[nodeID] = nodeCSS;
 
@@ -223,7 +216,6 @@ export async function getComponent(
   fileKey: string,
   token: string
 ) {
-  console.log(token, fileKey);
   const api = new Figma.Api({
     personalAccessToken: token,
   });
@@ -233,9 +225,8 @@ export async function getComponent(
 
   const file = await api.getFile(fileKey, {
     plugin_data: relayPluginID,
-    geometry: 'paths',
+    geometry: "paths",
   });
-  console.log(file);
 
   ensureDirSync(assetDir);
   const imageFills = await api.getImageFills(fileKey);
@@ -247,10 +238,10 @@ export async function getComponent(
   }
 
   const canvases = file.document.children.filter((child: Node) =>
-    Figma.isNodeType(child, 'CANVAS')
+    Figma.isNodeType(child, "CANVAS")
   ) as CANVAS[];
   const components = canvases[0].children.filter(
-    (child: Node) => child.type === 'COMPONENT'
+    (child: Node) => child.type === "COMPONENT"
   );
 
   const componentTransforms = [];
