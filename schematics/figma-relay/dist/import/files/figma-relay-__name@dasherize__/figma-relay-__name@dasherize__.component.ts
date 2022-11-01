@@ -8,7 +8,7 @@ import { Component, Input, OnInit } from '@angular/core';
 export class <%= classify(name) %>Component implements OnInit {
 	
 
-    <%= inputString %>
+<%= inputString %>
 
     constructor() { }
 	

@@ -38,7 +38,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.importComponent = void 0;
 const schematics_1 = require("@angular-devkit/schematics");
 const inquirer = __importStar(require("inquirer"));
-// import * as Figma from 'figma-api';
 const core_1 = require("@angular-devkit/core");
 const workspace_1 = require("@schematics/angular/utility/workspace");
 const figma_1 = require("./figma");
@@ -106,10 +105,21 @@ function importComponent(_options) {
         const project = workspace.projects.get("demo");
         const srcRoot = project === null || project === void 0 ? void 0 : project.sourceRoot;
         const componentTransforms = yield (0, figma_1.getComponent)((0, path_1.join)(srcRoot, "assets", "figma-relay"), "/assets/figma-relay", fileKey, config.token);
+        const questions = [
+            {
+                message: "Which components do you want to import/update",
+                type: "checkbox",
+                name: "components",
+                choices: componentTransforms.map((c) => c.renderNode.name),
+            },
+        ];
+        const answer = yield inquirer.prompt(questions);
         const chainsOps = [];
         for (let component of componentTransforms) {
-            const options = getComponentOptions(component);
-            chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot));
+            if (answer.components.includes(component.renderNode.name)) {
+                const options = getComponentOptions(component);
+                chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot));
+            }
         }
         return (0, schematics_1.chain)(chainsOps);
     });
@@ -229,7 +239,7 @@ function getComponentOptions(component) {
         name: component.renderNode.name.split(" ").join(""),
     };
     const inputString = inputs.reduce((prev, curr) => {
-        return prev + `  @Input()\n${curr.name}:${curr.type}=${curr.default}; \n`;
+        return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
     }, "");
     options.htmlContent = htmlContent;
     options.css = style;

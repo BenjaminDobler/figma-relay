@@ -261,7 +261,7 @@ function getComponentOptions(component: any) {
   };
 
   const inputString = inputs.reduce((prev: any, curr: any) => {
-    return prev + `  @Input()\n${curr.name}:${curr.type}=${curr.default}; \n`;
+    return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
   }, "");
 
   options.htmlContent = htmlContent;

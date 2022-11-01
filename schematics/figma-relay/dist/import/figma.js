@@ -41,13 +41,13 @@ const axios_1 = __importDefault(require("axios"));
 const fs_extra_1 = require("fs-extra");
 const Figma = __importStar(require("figma-api"));
 const path_1 = require("path");
-const outDir = './output';
-let assetDir = './output/assets/';
-let relativeAssetDir = '';
-const relayPluginID = '1041056822461507786';
+const outDir = "./output";
+let assetDir = "./output/assets/";
+let relativeAssetDir = "";
+const relayPluginID = "1041056822461507786";
 function downloadFile(source, destination) {
     return __awaiter(this, void 0, void 0, function* () {
-        const res = yield axios_1.default.get(source, { responseType: 'arraybuffer' });
+        const res = yield axios_1.default.get(source, { responseType: "arraybuffer" });
         (0, fs_extra_1.writeFileSync)(destination, res.data);
     });
 }
@@ -58,10 +58,9 @@ function transformComponent(node) {
     return __awaiter(this, void 0, void 0, function* () {
         const transformNode = (node, css, parent) => __awaiter(this, void 0, void 0, function* () {
             const renderNode = {};
-            console.log(node.type);
-            const nodeID = node.name.split(' ').join('-').toLowerCase() +
-                '-' +
-                node.id.replace(':', '-');
+            const nodeID = node.name.split(" ").join("-").toLowerCase() +
+                "-" +
+                node.id.replace(":", "-");
             renderNode.id = nodeID;
             renderNode.type = node.type;
             renderNode.name = node.name;
@@ -70,44 +69,40 @@ function transformComponent(node) {
                 const relayData = node.pluginData[relayPluginID];
                 if (relayData.parameters) {
                     const parameters = JSON.parse(relayData.parameters);
-                    console.log(parameters);
                     renderNode.parameters = parameters;
                 }
                 if (relayData.interactions) {
                     const interactions = JSON.parse(relayData.interactions);
-                    console.log(interactions);
                     renderNode.interactions = interactions;
                 }
             }
             let nodeCSS = {};
-            nodeCSS['box-sizing'] = 'border-box';
-            if (node.type === 'RECTANGLE') {
+            nodeCSS["box-sizing"] = "border-box";
+            if (node.type === "RECTANGLE") {
             }
-            if (node.type === 'STAR' || node.type === 'REGULAR_POLYGON') {
+            if (node.type === "STAR" || node.type === "REGULAR_POLYGON") {
                 if (node.fillGeometry) {
                     const geometry = node.fillGeometry[0];
                     const shape = {};
                     shape.path = geometry.path;
-                    const imageFill = node.fills.find((fill) => fill.type === 'IMAGE');
+                    const imageFill = node.fills.find((fill) => fill.type === "IMAGE");
                     if (imageFill) {
                         imageFill.imageRef;
                         shape.imagePattern = {
-                            url: `${relativeAssetDir}/${imageFill.imageRef}.png`
+                            url: `${relativeAssetDir}/${imageFill.imageRef}.png`,
                         };
                     }
                     else {
-                        const solidFill = node.fills.find((fill) => fill.type === 'SOLID');
+                        const solidFill = node.fills.find((fill) => fill.type === "SOLID");
                         shape.fillColor = color2Css(solidFill.color);
                     }
-                    renderNode.shapes = [
-                        shape
-                    ];
+                    renderNode.shapes = [shape];
                 }
             }
-            if (node.type === 'TEXT') {
-                nodeCSS['font-family'] = node.style.fontFamily;
-                nodeCSS['font-weight'] = node.style.fontWeight;
-                nodeCSS['font-size'] = node.style.fontSize + 'px';
+            if (node.type === "TEXT") {
+                nodeCSS["font-family"] = node.style.fontFamily;
+                nodeCSS["font-weight"] = node.style.fontWeight;
+                nodeCSS["font-size"] = node.style.fontSize + "px";
                 renderNode.content = node.characters;
                 //           "fontPostScriptName": "MontserratRoman-Bold",
                 //           "textAutoResize": "WIDTH_AND_HEIGHT",
@@ -119,25 +114,24 @@ function transformComponent(node) {
                 //           "lineHeightUnit": "INTRINSIC_%"
                 // node.charachter is the content!
             }
-            const imageFill = node.fills.find((fill) => fill.type === 'IMAGE');
-            console.log("FILL GEO", node.fillGeometry);
+            const imageFill = node.fills.find((fill) => fill.type === "IMAGE");
             if (imageFill && !renderNode.shapes) {
                 imageFill.imageRef;
                 nodeCSS.background = `url(${relativeAssetDir}/${imageFill.imageRef}.png)`;
-                nodeCSS['background-size'] = 'cover';
-                nodeCSS['background-position'] = 'center';
+                nodeCSS["background-size"] = "cover";
+                nodeCSS["background-position"] = "center";
             }
             renderNode.inputs = [];
             if (node.cornerRadius) {
-                nodeCSS['border-radius'] = node.cornerRadius + 'px';
-                const borderRadiusParameter = renderNode.parameters.find((p) => p.property === 'border-radius');
+                nodeCSS["border-radius"] = node.cornerRadius + "px";
+                const borderRadiusParameter = renderNode.parameters.find((p) => p.property === "border-radius");
                 if (borderRadiusParameter) {
                     renderNode.inputs.push({
                         name: borderRadiusParameter.name,
                         type: borderRadiusParameter.type,
-                        bindingType: 'STYLE',
-                        bindingName: 'borderRadius',
-                        bindingUnit: 'px',
+                        bindingType: "STYLE",
+                        bindingName: "borderRadius",
+                        bindingUnit: "px",
                         default: node.cornerRadius,
                     });
                 }
@@ -145,51 +139,52 @@ function transformComponent(node) {
             if (node.strokes && node.strokes.length > 0) {
                 const stroke = node.strokes[0];
                 const borderColor = color2Css(stroke.color);
-                nodeCSS.border = node.strokeWeight + 'px solid ' + borderColor;
+                nodeCSS.border = node.strokeWeight + "px solid " + borderColor;
             }
-            if (node.layoutMode !== 'NONE') {
+            if (node.layoutMode !== "NONE") {
                 // we have autolayout
-                nodeCSS.display = 'flex';
-                nodeCSS['flex-direction'] =
-                    node.layoutMode === 'VERTICAL' ? 'column' : 'row';
+                nodeCSS.display = "inline-flex";
+                nodeCSS["flex-direction"] =
+                    node.layoutMode === "VERTICAL" ? "column" : "row";
                 if (node.itemSpacing) {
-                    nodeCSS.gap = node.itemSpacing + 'px';
+                    nodeCSS.gap = node.itemSpacing + "px";
                 }
             }
+            nodeCSS.width = node.absoluteBoundingBox.width + "px";
+            nodeCSS.height = node.absoluteBoundingBox.height + "px";
             if (((node.paddingLeft === node.paddingRight) === node.paddingBottom) ===
                 node.paddingTop) {
-                nodeCSS.padding = node.paddingLeft + 'px';
+                nodeCSS.padding = node.paddingLeft - node.strokeWeight + "px";
             }
             else {
                 if (node.paddingLeft) {
-                    nodeCSS['padding-left'] = node.paddingLeft + 'px';
+                    nodeCSS["padding-left"] = node.paddingLeft - node.strokeWeight + "px";
                 }
                 if (node.paddingRight) {
-                    nodeCSS['padding-right'] = node.paddingRight + 'px';
+                    nodeCSS["padding-right"] = node.paddingRight - node.strokeWeight + "px";
                 }
                 if (node.paddingTop) {
-                    nodeCSS['padding-top'] = node.paddingTop + 'px';
+                    nodeCSS["padding-top"] = node.paddingTop - node.strokeWeight + "px";
                 }
                 if (node.paddingBottom) {
-                    nodeCSS['padding-bottom'] = node.paddingBottom + 'px';
+                    nodeCSS["padding-bottom"] =
+                        node.paddingBottom - node.strokeWeight + "px";
                 }
             }
             if (node.backgroundColor) {
-                nodeCSS['background-color'] = color2Css(node.backgroundColor);
-                const bgColorParameter = renderNode.parameters.find((p) => p.property === 'background-color');
+                nodeCSS["background-color"] = color2Css(node.backgroundColor);
+                const bgColorParameter = renderNode.parameters.find((p) => p.property === "background-color");
                 if (bgColorParameter) {
                     renderNode.inputs.push({
                         name: bgColorParameter.name,
-                        type: 'string',
-                        bindingType: 'STYLE',
-                        bindingName: 'backgroundColor',
-                        bindingUnit: '',
+                        type: "string",
+                        bindingType: "STYLE",
+                        bindingName: "backgroundColor",
+                        bindingUnit: "",
                         default: `'${color2Css(node.backgroundColor)}'`,
                     });
                 }
             }
-            nodeCSS.width = node.absoluteBoundingBox.width + 'px';
-            nodeCSS.height = node.absoluteBoundingBox.height + 'px';
             css[nodeID] = nodeCSS;
             renderNode.css = nodeCSS;
             renderNode.children = [];
@@ -208,7 +203,6 @@ function transformComponent(node) {
 }
 function getComponent(aDir, relativeADir, fileKey, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(token, fileKey);
         const api = new Figma.Api({
             personalAccessToken: token,
         });
@@ -216,9 +210,8 @@ function getComponent(aDir, relativeADir, fileKey, token) {
         assetDir = aDir;
         const file = yield api.getFile(fileKey, {
             plugin_data: relayPluginID,
-            geometry: 'paths',
+            geometry: "paths",
         });
-        console.log(file);
         (0, fs_extra_1.ensureDirSync)(assetDir);
         const imageFills = yield api.getImageFills(fileKey);
         if (imageFills.meta) {
@@ -227,8 +220,8 @@ function getComponent(aDir, relativeADir, fileKey, token) {
                 yield downloadFile(url, (0, path_1.join)(assetDir, `${file}.png`));
             }
         }
-        const canvases = file.document.children.filter((child) => Figma.isNodeType(child, 'CANVAS'));
-        const components = canvases[0].children.filter((child) => child.type === 'COMPONENT');
+        const canvases = file.document.children.filter((child) => Figma.isNodeType(child, "CANVAS"));
+        const components = canvases[0].children.filter((child) => child.type === "COMPONENT");
         const componentTransforms = [];
         for (let component of components) {
             const transformResult = yield transformComponent(component);
