@@ -44,6 +44,8 @@ async function transformComponent(node: any) {
     renderNode.type = node.type;
     renderNode.name = node.name;
     renderNode.parameters = [];
+    renderNode.inputs = [];
+
 
     if (node.pluginData && node.pluginData[relayPluginID]) {
       const relayData = node.pluginData[relayPluginID];
@@ -55,12 +57,19 @@ async function transformComponent(node: any) {
       if (relayData.interactions) {
         const interactions = JSON.parse(relayData.interactions);
         renderNode.interactions = interactions;
+        console.log(interactions);
       }
     }
 
     let nodeCSS: any = {};
 
     nodeCSS["box-sizing"] = "border-box";
+
+    if (node.type === "ELLIPSE") {
+      if (node.absoluteBoundingBox.width === node.absoluteBoundingBox.height) {
+        nodeCSS['border-radius'] = '50%';
+      }
+    }
 
     if (node.type === "RECTANGLE") {
       const bgFill = node.fills.find((fill: any) => fill.type === "SOLID");
@@ -125,11 +134,24 @@ async function transformComponent(node: any) {
     if (imageFill && !renderNode.shapes) {
       imageFill.imageRef;
       nodeCSS.background = `url(${relativeAssetDir}/${imageFill.imageRef}.png)`;
-      nodeCSS["background-size"] = "cover";
-      nodeCSS["background-position"] = "center";
+      nodeCSS["background-size"] = "cover!important";
+      nodeCSS["background-position"] = "center!important";
+
+      const imageContentParameter = renderNode.parameters.find((param: any)=>param.property === 'image-content');
+      if (imageContentParameter) {
+        renderNode.inputs.push({
+          name: imageContentParameter.name,
+          type: 'string',
+          bindingType: "STYLE",
+          bindingName: "background",
+          bindingFunction: (val: string)=>{
+            return `'url('+${val}+')'`;
+          },
+          default: `'${relativeAssetDir}/${imageFill.imageRef}.png'`,
+        });
+      }
     }
 
-    renderNode.inputs = [];
     if (node.cornerRadius) {
       nodeCSS["border-radius"] = node.cornerRadius + "px";
       const borderRadiusParameter = renderNode.parameters.find(

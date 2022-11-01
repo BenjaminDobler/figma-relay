@@ -66,6 +66,7 @@ function transformComponent(node) {
             renderNode.type = node.type;
             renderNode.name = node.name;
             renderNode.parameters = [];
+            renderNode.inputs = [];
             if (node.pluginData && node.pluginData[relayPluginID]) {
                 const relayData = node.pluginData[relayPluginID];
                 if (relayData.parameters) {
@@ -75,10 +76,16 @@ function transformComponent(node) {
                 if (relayData.interactions) {
                     const interactions = JSON.parse(relayData.interactions);
                     renderNode.interactions = interactions;
+                    console.log(interactions);
                 }
             }
             let nodeCSS = {};
             nodeCSS["box-sizing"] = "border-box";
+            if (node.type === "ELLIPSE") {
+                if (node.absoluteBoundingBox.width === node.absoluteBoundingBox.height) {
+                    nodeCSS['border-radius'] = '50%';
+                }
+            }
             if (node.type === "RECTANGLE") {
                 const bgFill = node.fills.find((fill) => fill.type === "SOLID");
                 if (bgFill) {
@@ -132,10 +139,22 @@ function transformComponent(node) {
             if (imageFill && !renderNode.shapes) {
                 imageFill.imageRef;
                 nodeCSS.background = `url(${relativeAssetDir}/${imageFill.imageRef}.png)`;
-                nodeCSS["background-size"] = "cover";
-                nodeCSS["background-position"] = "center";
+                nodeCSS["background-size"] = "cover!important";
+                nodeCSS["background-position"] = "center!important";
+                const imageContentParameter = renderNode.parameters.find((param) => param.property === 'image-content');
+                if (imageContentParameter) {
+                    renderNode.inputs.push({
+                        name: imageContentParameter.name,
+                        type: 'string',
+                        bindingType: "STYLE",
+                        bindingName: "background",
+                        bindingFunction: (val) => {
+                            return `'url('+${val}+')'`;
+                        },
+                        default: `'${relativeAssetDir}/${imageFill.imageRef}.png'`,
+                    });
+                }
             }
-            renderNode.inputs = [];
             if (node.cornerRadius) {
                 nodeCSS["border-radius"] = node.cornerRadius + "px";
                 const borderRadiusParameter = renderNode.parameters.find((p) => p.property === "border-radius");

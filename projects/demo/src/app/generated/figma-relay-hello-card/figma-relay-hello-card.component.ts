@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
 
 @Component({
 	selector: 'figma-relay-hello-card-component',
@@ -6,7 +6,6 @@ import { Component, Input, OnInit } from '@angular/core';
 	styleUrls: ['./figma-relay-hello-card.component.scss'],
 })
 export class HelloCardComponent implements OnInit {
-	
 
     @Input()
     borderRadius:number = 10; 
@@ -14,6 +13,13 @@ export class HelloCardComponent implements OnInit {
     backgroundColor:string = 'rgba(255, 151,29, 1)'; 
     @Input()
     name:string = 'Hello World'; 
+    @Input()
+    img:string = '/assets/figma-relay/d46a0a72ccad51b5e9f1a3cf3d80269674e11808.png'; 
+
+
+    @Output()
+    onImageClicked:EventEmitter<any> = new EventEmitter<any>(); 
+
 
 
     constructor() { }

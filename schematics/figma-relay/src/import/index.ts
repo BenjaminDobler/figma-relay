@@ -132,6 +132,7 @@ function addFiles(options: any, outDir: string) {
 
 function getComponentOptions(component: any) {
   const inputs: any = [];
+  const outputs: any = [];
 
   component.renderNode.isRoot = true;
 
@@ -149,10 +150,17 @@ function getComponentOptions(component: any) {
           default: input.default,
         });
 
-        tag.setAttribute(
-          `[style.${input.bindingName}]`,
-          `${input.name} + '${input.bindingUnit}'`
-        );
+        if (input.bindingUnit) {
+          tag.setAttribute(
+            `[style.${input.bindingName}]`,
+            `${input.name} + '${input.bindingUnit}'`
+          );
+        } else if(input.bindingFunction) {
+          tag.setAttribute(
+            `[style.${input.bindingName}]`,
+            input.bindingFunction(input.name)
+          );
+        }
       }
     });
 
@@ -231,6 +239,16 @@ function getComponentOptions(component: any) {
         tag.textContent = renderNode.content;
       }
     }
+
+
+    if (renderNode.interactions) {
+    const tapInteraction = renderNode.interactions.find((interaction:any)=>interaction.property === 'tap-handler');
+      if (tapInteraction) {
+        tag.setAttribute('(click)', tapInteraction.name + '.emit($event)');
+        outputs.push(tapInteraction.name);
+      }
+    }
+
     return tag;
   };
 
@@ -261,13 +279,22 @@ function getComponentOptions(component: any) {
   };
 
   const inputString = inputs.reduce((prev: any, curr: any) => {
-    return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
+    return (
+      prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`
+    );
   }, "");
+
+  const outputString = outputs.reduce((prev: string, curr: string)=>{
+    return (
+      prev + `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`
+    );
+  }, '');
 
   options.htmlContent = htmlContent;
   options.css = style;
   options.inputs = inputs;
   options.inputString = inputString;
+  options.outputString = outputString;
 
   options.renderNode = component.renderNode;
   return options;

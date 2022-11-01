@@ -1,8 +1,11 @@
+
+<figma-relay-hello-card-component></figma-relay-hello-card-component>
 <figma-relay-hello-card-component
   [borderRadius]="10"
   [backgroundColor]="'#666666'"
-  *ngFor="let name of names"
-  [name]="name"
+  *ngFor="let album of albums"
+  [name]="album.name"
+  [img]="album.image"
 ></figma-relay-hello-card-component>
 
 

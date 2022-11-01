@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
 
 @Component({
 	selector: 'figma-relay-<%= dasherize(name) %>-component',
@@ -6,9 +6,11 @@ import { Component, Input, OnInit } from '@angular/core';
 	styleUrls: ['./figma-relay-<%= dasherize(name) %>.component.scss'],
 })
 export class <%= classify(name) %>Component implements OnInit {
-	
 
 <%= inputString %>
+
+<%= outputString %>
+
 
     constructor() { }
 	

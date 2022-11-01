@@ -133,6 +133,7 @@ function addFiles(options, outDir) {
 }
 function getComponentOptions(component) {
     const inputs = [];
+    const outputs = [];
     component.renderNode.isRoot = true;
     let dom = new jsdom_1.JSDOM("");
     const document = dom.window.document;
@@ -147,7 +148,12 @@ function getComponentOptions(component) {
                     name: input.name,
                     default: input.default,
                 });
-                tag.setAttribute(`[style.${input.bindingName}]`, `${input.name} + '${input.bindingUnit}'`);
+                if (input.bindingUnit) {
+                    tag.setAttribute(`[style.${input.bindingName}]`, `${input.name} + '${input.bindingUnit}'`);
+                }
+                else if (input.bindingFunction) {
+                    tag.setAttribute(`[style.${input.bindingName}]`, input.bindingFunction(input.name));
+                }
             }
         });
         if (renderNode.shapes) {
@@ -215,6 +221,13 @@ function getComponentOptions(component) {
                 tag.textContent = renderNode.content;
             }
         }
+        if (renderNode.interactions) {
+            const tapInteraction = renderNode.interactions.find((interaction) => interaction.property === 'tap-handler');
+            if (tapInteraction) {
+                tag.setAttribute('(click)', tapInteraction.name + '.emit($event)');
+                outputs.push(tapInteraction.name);
+            }
+        }
         return tag;
     };
     const rootTag = getContent(component.renderNode);
@@ -239,12 +252,16 @@ function getComponentOptions(component) {
         name: component.renderNode.name.split(" ").join(""),
     };
     const inputString = inputs.reduce((prev, curr) => {
-        return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
+        return (prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`);
     }, "");
+    const outputString = outputs.reduce((prev, curr) => {
+        return (prev + `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`);
+    }, '');
     options.htmlContent = htmlContent;
     options.css = style;
     options.inputs = inputs;
     options.inputString = inputString;
+    options.outputString = outputString;
     options.renderNode = component.renderNode;
     return options;
 }
