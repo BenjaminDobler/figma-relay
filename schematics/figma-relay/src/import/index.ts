@@ -11,7 +11,6 @@ import {
   MergeStrategy,
 } from "@angular-devkit/schematics";
 import * as inquirer from "inquirer";
-// import * as Figma from 'figma-api';
 import { strings } from "@angular-devkit/core";
 import { getWorkspace } from "@schematics/angular/utility/workspace";
 import { getComponent } from "./figma";
@@ -96,10 +95,22 @@ export function importComponent(_options: any): Rule {
       config.token
     );
 
+    const questions = [
+      {
+        message: "Which components do you want to import/update",
+        type: "checkbox",
+        name: "components",
+        choices: componentTransforms.map((c: any) => c.renderNode.name),
+      },
+    ];
+    const answer = await inquirer.prompt(questions);
+
     const chainsOps = [];
     for (let component of componentTransforms) {
-      const options = getComponentOptions(component);
-      chainsOps.push(addFiles(options, project?.sourceRoot as string));
+      if (answer.components.includes(component.renderNode.name)) {
+        const options = getComponentOptions(component);
+        chainsOps.push(addFiles(options, project?.sourceRoot as string));
+      }
     }
     return chain(chainsOps);
   };
