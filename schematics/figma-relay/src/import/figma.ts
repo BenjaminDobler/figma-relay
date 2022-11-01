@@ -33,6 +33,8 @@ async function transformComponent(node: any) {
   const transformNode = async (node: any, css: any, parent?: any) => {
     const renderNode: any = {};
 
+    renderNode.originalNode = node;
+
     const nodeID =
       node.name.split(" ").join("-").toLowerCase() +
       "-" +
@@ -61,6 +63,22 @@ async function transformComponent(node: any) {
     nodeCSS["box-sizing"] = "border-box";
 
     if (node.type === "RECTANGLE") {
+      const bgFill = node.fills.find((fill: any) => fill.type === "SOLID");
+      if (bgFill) {
+        nodeCSS["background-color"] = color2Css(bgFill.color);
+      }
+
+      /*
+      box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+      */
+      if (node.effects) {
+        const dropShadow = node.effects.find(
+          (effect: any) => effect.type === "DROP_SHADOW"
+        );
+        if (dropShadow) {
+          nodeCSS['box-shadow'] = `${dropShadow.offset.x}px ${dropShadow.offset.y}px ${dropShadow.radius}px ${color2Css(dropShadow.color)}`;
+        }
+      }
     }
 
     if (node.type === "STAR" || node.type === "REGULAR_POLYGON") {
@@ -135,17 +153,38 @@ async function transformComponent(node: any) {
       nodeCSS.border = node.strokeWeight + "px solid " + borderColor;
     }
 
-    if (node.layoutMode !== "NONE") {
+    if (node.layoutMode && node.layoutMode !== "NONE") {
       // we have autolayout
+      renderNode.autoLayout = true;
       nodeCSS.display = "inline-flex";
       nodeCSS["flex-direction"] =
         node.layoutMode === "VERTICAL" ? "column" : "row";
       if (node.itemSpacing) {
         nodeCSS.gap = node.itemSpacing + "px";
       }
+    } else if (parent && !parent.autoLayout) {
+      renderNode.autoLayout = false;
+
+      nodeCSS.position = "absolute";
+
+      let x = node.absoluteBoundingBox.x;
+      if (parent) {
+        x -= parent.originalNode.absoluteBoundingBox.x;
+      }
+
+      let y = node.absoluteBoundingBox.y;
+      if (parent) {
+        y -= parent.originalNode.absoluteBoundingBox.y;
+      }
+
+      nodeCSS.left = x + "px";
+      nodeCSS.top = y + "px";
+    } else {
+      nodeCSS.position = "relative";
     }
     nodeCSS.width = node.absoluteBoundingBox.width + "px";
     nodeCSS.height = node.absoluteBoundingBox.height + "px";
+
     if (
       ((node.paddingLeft === node.paddingRight) === node.paddingBottom) ===
       node.paddingTop

@@ -1,8 +1,7 @@
 
 .polygon-51-13 {
 	box-sizing:border-box;
-	display:inline-flex;
-	flex-direction:row;
+	position:relative;
 	width:285px;
 	height:258px;
 	background-color:rgba(0, 0,0, 0);
@@ -10,8 +9,9 @@
 .polygon-1-51-12 {
 	box-sizing:border-box;
 	border-radius:29px;
-	display:inline-flex;
-	flex-direction:row;
+	position:absolute;
+	left:0px;
+	top:0px;
 	width:285px;
 	height:258px;
 }

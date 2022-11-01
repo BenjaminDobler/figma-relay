@@ -58,6 +58,7 @@ function transformComponent(node) {
     return __awaiter(this, void 0, void 0, function* () {
         const transformNode = (node, css, parent) => __awaiter(this, void 0, void 0, function* () {
             const renderNode = {};
+            renderNode.originalNode = node;
             const nodeID = node.name.split(" ").join("-").toLowerCase() +
                 "-" +
                 node.id.replace(":", "-");
@@ -79,6 +80,19 @@ function transformComponent(node) {
             let nodeCSS = {};
             nodeCSS["box-sizing"] = "border-box";
             if (node.type === "RECTANGLE") {
+                const bgFill = node.fills.find((fill) => fill.type === "SOLID");
+                if (bgFill) {
+                    nodeCSS["background-color"] = color2Css(bgFill.color);
+                }
+                /*
+                box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+                */
+                if (node.effects) {
+                    const dropShadow = node.effects.find((effect) => effect.type === "DROP_SHADOW");
+                    if (dropShadow) {
+                        nodeCSS['box-shadow'] = `${dropShadow.offset.x}px ${dropShadow.offset.y}px ${dropShadow.radius}px ${color2Css(dropShadow.color)}`;
+                    }
+                }
             }
             if (node.type === "STAR" || node.type === "REGULAR_POLYGON") {
                 if (node.fillGeometry) {
@@ -141,14 +155,32 @@ function transformComponent(node) {
                 const borderColor = color2Css(stroke.color);
                 nodeCSS.border = node.strokeWeight + "px solid " + borderColor;
             }
-            if (node.layoutMode !== "NONE") {
+            if (node.layoutMode && node.layoutMode !== "NONE") {
                 // we have autolayout
+                renderNode.autoLayout = true;
                 nodeCSS.display = "inline-flex";
                 nodeCSS["flex-direction"] =
                     node.layoutMode === "VERTICAL" ? "column" : "row";
                 if (node.itemSpacing) {
                     nodeCSS.gap = node.itemSpacing + "px";
                 }
+            }
+            else if (parent && !parent.autoLayout) {
+                renderNode.autoLayout = false;
+                nodeCSS.position = "absolute";
+                let x = node.absoluteBoundingBox.x;
+                if (parent) {
+                    x -= parent.originalNode.absoluteBoundingBox.x;
+                }
+                let y = node.absoluteBoundingBox.y;
+                if (parent) {
+                    y -= parent.originalNode.absoluteBoundingBox.y;
+                }
+                nodeCSS.left = x + "px";
+                nodeCSS.top = y + "px";
+            }
+            else {
+                nodeCSS.position = "relative";
             }
             nodeCSS.width = node.absoluteBoundingBox.width + "px";
             nodeCSS.height = node.absoluteBoundingBox.height + "px";

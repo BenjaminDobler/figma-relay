@@ -1,28 +1,21 @@
-# Getting Started With Schematics
+# Angular Figma/Relay plugin
 
-This repository is a basic Schematic implementation that serves as a starting point to create and publish Schematics to NPM.
+[![npm version](https://badge.fury.io/js/%40richapps%2Ffigma-relay.svg)](https://www.npmjs.com/@richapps/figma-relay)
 
-### Testing
 
-To test locally, install `@angular-devkit/schematics-cli` globally and use the `schematics` command line tool. That tool acts the same as the `generate` command of the Angular CLI, but also has a debug mode.
+This a proof of concept schematic implementation which allows to import component from a figma file and convert them to angular components. The Android Figma Relay plugin can be used in the figma file to add parameters to you components which will then be available as @Inputs in your angular component.
 
-Check the documentation with
+# Installation
+``` npm i @richapps/figma-relay```
 
-```bash
-schematics --help
-```
+# Usage
+In you angular project run
+```ng g @richapps/figma-relay:import```
 
-### Unit Testing
+When asked enter you figma token and the shared url to your figma file (you will only be asked once and the settings will be remembered from there on).
 
-`npm run test` will run the unit tests, using Jasmine as a runner and test framework.
+Now you will be presented with a list of components from your figma file. Select the components you want to import.
+The selected components will be generated!
 
-### Publishing
 
-To publish, simply do:
 
-```bash
-npm run build
-npm publish
-```
-
-That's it!

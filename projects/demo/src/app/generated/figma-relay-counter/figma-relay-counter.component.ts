@@ -8,10 +8,10 @@ import { Component, Input, OnInit } from '@angular/core';
 export class CounterComponent implements OnInit {
 	
 
-      @Input()
-current:number=1; 
-  @Input()
-total:number=2; 
+    @Input()
+    current:number = 1; 
+    @Input()
+    total:number = 2; 
 
 
     constructor() { }

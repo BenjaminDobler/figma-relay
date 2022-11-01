@@ -1,16 +1,16 @@
 
 .star-50-10 {
 	box-sizing:border-box;
-	display:inline-flex;
-	flex-direction:row;
+	position:relative;
 	width:433px;
 	height:433px;
 	background-color:rgba(0, 0,0, 0);
 }
 .star-1-50-11 {
 	box-sizing:border-box;
-	display:inline-flex;
-	flex-direction:row;
+	position:absolute;
+	left:0px;
+	top:0px;
 	width:433px;
 	height:433px;
 }
