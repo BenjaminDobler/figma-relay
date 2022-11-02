@@ -125,6 +125,10 @@ function transformComponent(node) {
                 }
             }
             if (node.type === "TEXT") {
+                const fillColor = node.fills.find((fill) => fill.type === "SOLID");
+                if (fillColor) {
+                    nodeCSS.color = color2Css(fillColor.color);
+                }
                 nodeCSS["font-family"] = node.style.fontFamily;
                 nodeCSS["font-weight"] = node.style.fontWeight;
                 nodeCSS["font-size"] = node.style.fontSize + "px";
