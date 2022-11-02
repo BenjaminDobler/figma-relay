@@ -119,25 +119,38 @@ function importComponent(_options) {
             console.log(firstComponentName);
             const variantPropertyName = firstComponentName.split('=')[0];
             const variantNames = [];
+            const allInputs = [];
             for (let component of componentSet.components) {
                 const options = getComponentOptions(component);
                 chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot, subDir));
                 const tagName = 'figma-relay-' + core_1.strings.dasherize(component.renderNode.name) + '-component';
-                htmlContent += `<${tagName} *ngIf="${variantPropertyName}=='${component.renderNode.name}'"></${tagName}>`;
+                const inputString = options.inputs.reduce((prev, input) => {
+                    return prev + `[${input.name}]="${input.name}" `;
+                }, '');
+                htmlContent += `<${tagName} *ngIf="${variantPropertyName}=='${component.renderNode.name}'" ${inputString}></${tagName}>`;
                 const className = core_1.strings.classify(component.renderNode.name) + 'Component';
                 componentSetImportClasses += className + ',';
-                //console.log('component name ', component.renderNode.name);
                 variantNames.push(component.renderNode.name);
                 const n = 'figma-relay-' + core_1.strings.dasherize(component.renderNode.name);
                 const i = `import { ${className} } from './variants/${n}/${n}.component';`;
                 componentSetImportPaths += i + '\n';
+                console.log(component.renderNode.parameters);
+                console.log(options.inputs);
+                options.inputs.forEach((inp) => {
+                    if (!allInputs.find(input => input.name === inp.name)) {
+                        allInputs.push(inp);
+                    }
+                });
             }
             const options = {
                 htmlContent: htmlContent,
             };
+            const inputString = allInputs.reduce((prev, curr) => {
+                return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
+            }, '');
             options.css = '';
             options.inputs = [];
-            options.inputString = '';
+            options.inputString = inputString;
             options.outputString = '';
             options.typeDefinitions = `export type ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames.join("' | '")}';`;
             options.variantProperty = `@Input()\n${variantPropertyName}: ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames[0]}'`;

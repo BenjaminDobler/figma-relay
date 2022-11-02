@@ -93,40 +93,54 @@ export function importComponent(_options: any): Rule {
             let componentSetImportClasses = ''
             let componentSetImportPaths = ''
             const firstComponentName = componentSet.original.children[0].originalName
-            console.log(firstComponentName);
+            console.log(firstComponentName)
             const variantPropertyName = firstComponentName.split('=')[0]
             const variantNames = []
-
+            const allInputs: any[] = [];
             for (let component of componentSet.components) {
                 const options = getComponentOptions(component)
                 chainsOps.push(addFiles(options, project?.sourceRoot as string, subDir))
                 const tagName = 'figma-relay-' + strings.dasherize(component.renderNode.name) + '-component'
-                htmlContent += `<${tagName} *ngIf="${variantPropertyName}=='${component.renderNode.name}'"></${tagName}>`
+
+                const inputString = options.inputs.reduce((prev: string, input: any) => {
+                    return prev + `[${input.name}]="${input.name}" `
+                }, '')
+
+                htmlContent += `<${tagName} *ngIf="${variantPropertyName}=='${component.renderNode.name}'" ${inputString}></${tagName}>`
 
                 const className = strings.classify(component.renderNode.name) + 'Component'
                 componentSetImportClasses += className + ','
 
-                //console.log('component name ', component.renderNode.name);
                 variantNames.push(component.renderNode.name)
-
                 const n = 'figma-relay-' + strings.dasherize(component.renderNode.name)
                 const i = `import { ${className} } from './variants/${n}/${n}.component';`
-
                 componentSetImportPaths += i + '\n'
+
+                console.log(component.renderNode.parameters)
+                console.log(options.inputs)
+
+                options.inputs.forEach((inp: any)=>{
+                  if (!allInputs.find(input => input.name === inp.name)) {
+                    allInputs.push(inp);
+                  }
+                });
             }
 
             const options: any = {
                 htmlContent: htmlContent,
             }
+
+            const inputString = allInputs.reduce((prev: any, curr: any) => {
+              return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`
+          }, '')
             options.css = ''
             options.inputs = []
-            options.inputString = ''
+            options.inputString = inputString;
             options.outputString = ''
-            
+
             options.typeDefinitions = `export type ${strings.classify(variantPropertyName)}Type = '${variantNames.join("' | '")}';`
             options.variantProperty = `@Input()\n${variantPropertyName}: ${strings.classify(variantPropertyName)}Type = '${variantNames[0]}'`
             console.log(options.typeDefinitions)
-
             ;(options.name = componentSet.original.name.split(' ').join('')), (options.componentSetImportPaths = componentSetImportPaths)
             options.componentSetImportClasses = componentSetImportClasses
 
@@ -312,8 +326,8 @@ function getComponentOptions(component: any) {
     options.outputString = outputString
     options.componentSetImportPaths = ''
     options.componentSetImportClasses = ''
-    options.typeDefinitions = ``;
-    options.variantProperty = ``;
+    options.typeDefinitions = ``
+    options.variantProperty = ``
 
     options.renderNode = component.renderNode
     return options

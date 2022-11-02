@@ -1,4 +1,4 @@
-<div class="audio-item-2-172">
+<div class="audio-item-2-172" [style.borderRadius]="borderRadius + 'px'">
   <div class="content-2-181">
     <div class="episode-2-182">
       <div class="title-group-2-183">
@@ -8,7 +8,10 @@
         </div>
         <div class="author-2-185">The Bees</div>
       </div>
-      <div class="thumbnail-2-186"></div>
+      <div
+        class="thumbnail-2-186"
+        [style.background]="'url('+thumbnail+')'"
+      ></div>
     </div>
     <div class="meta-2-187">
       <div class="controls-2-188">
