@@ -1,8 +1,12 @@
 import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
-
+import { CommonModule } from '@angular/common'; 
 import { HeroItemComponent } from './variants/figma-relay-hero-item/figma-relay-hero-item.component';
 import { ArticleItemComponent } from './variants/figma-relay-article-item/figma-relay-article-item.component';
 import { AudioItemComponent } from './variants/figma-relay-audio-item/figma-relay-audio-item.component';
+
+
+
+export type ViewType = 'hero-item' | 'article-item' | 'audio-item';
 
 
 
@@ -10,6 +14,7 @@ import { AudioItemComponent } from './variants/figma-relay-audio-item/figma-rela
 @Component({
     standalone: true,
     imports: [
+        CommonModule,
         HeroItemComponent,ArticleItemComponent,AudioItemComponent,
     ],
 	selector: 'figma-relay-news-card-component',
@@ -17,6 +22,10 @@ import { AudioItemComponent } from './variants/figma-relay-audio-item/figma-rela
 	styleUrls: ['./figma-relay-news-card.component.scss'],
 })
 export class NewsCardComponent implements OnInit {
+
+    @Input()
+view: ViewType = 'hero-item'
+
 
 
 

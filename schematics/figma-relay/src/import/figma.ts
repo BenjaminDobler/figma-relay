@@ -35,6 +35,7 @@ async function transformComponent(node: any) {
 
     renderNode.originalNode = node;
 
+    node.originalName = node.name;
     if (node.name.includes('=')) { // it is a variant!?
       node.name = node.name.split('=')[1];
     }

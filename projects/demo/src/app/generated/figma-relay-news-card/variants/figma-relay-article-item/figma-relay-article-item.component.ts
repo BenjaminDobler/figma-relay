@@ -1,4 +1,8 @@
 import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common'; 
+
+
+
 
 
 
@@ -7,6 +11,7 @@ import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
 @Component({
     standalone: true,
     imports: [
+        CommonModule,
         
     ],
 	selector: 'figma-relay-article-item-component',
@@ -14,6 +19,9 @@ import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
 	styleUrls: ['./figma-relay-article-item.component.scss'],
 })
 export class ArticleItemComponent implements OnInit {
+
+    
+
 
 
 

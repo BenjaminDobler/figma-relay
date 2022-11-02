@@ -59,6 +59,7 @@ function transformComponent(node) {
         const transformNode = (node, css, parent) => __awaiter(this, void 0, void 0, function* () {
             const renderNode = {};
             renderNode.originalNode = node;
+            node.originalName = node.name;
             if (node.name.includes('=')) { // it is a variant!?
                 node.name = node.name.split('=')[1];
             }
