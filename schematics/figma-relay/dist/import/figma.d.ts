@@ -5,5 +5,8 @@ export interface ColorStyle {
     a: number;
 }
 export declare function getComponent(aDir: string, relativeADir: string, fileKey: string, token: string): Promise<{
-    renderNode: any;
-}[]>;
+    components: {
+        renderNode: any;
+    }[];
+    componentSets: any[];
+}>;

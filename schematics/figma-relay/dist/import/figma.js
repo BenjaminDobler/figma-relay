@@ -59,6 +59,9 @@ function transformComponent(node) {
         const transformNode = (node, css, parent) => __awaiter(this, void 0, void 0, function* () {
             const renderNode = {};
             renderNode.originalNode = node;
+            if (node.name.includes('=')) { // it is a variant!?
+                node.name = node.name.split('=')[1];
+            }
             const nodeID = node.name.split(" ").join("-").toLowerCase() +
                 "-" +
                 node.id.replace(":", "-");
@@ -263,6 +266,7 @@ function getComponent(aDir, relativeADir, fileKey, token) {
             plugin_data: relayPluginID,
             geometry: "paths",
         });
+        console.log(file);
         (0, fs_extra_1.ensureDirSync)(assetDir);
         const imageFills = yield api.getImageFills(fileKey);
         if (imageFills.meta) {
@@ -273,12 +277,28 @@ function getComponent(aDir, relativeADir, fileKey, token) {
         }
         const canvases = file.document.children.filter((child) => Figma.isNodeType(child, "CANVAS"));
         const components = canvases[0].children.filter((child) => child.type === "COMPONENT");
+        const componentSets = canvases[0].children.filter((child) => child.type === "COMPONENT_SET");
+        const transformedComponentSets = [];
+        for (let componentSet of componentSets) {
+            const set = {
+                components: [],
+                original: componentSet
+            };
+            for (let component of componentSet.children) {
+                const transformResult = yield transformComponent(component);
+                set.components.push(transformResult);
+            }
+            transformedComponentSets.push(set);
+        }
         const componentTransforms = [];
         for (let component of components) {
             const transformResult = yield transformComponent(component);
             componentTransforms.push(transformResult);
         }
-        return componentTransforms;
+        return {
+            components: componentTransforms,
+            componentSets: transformedComponentSets
+        };
     });
 }
 exports.getComponent = getComponent;

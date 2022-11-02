@@ -65,6 +65,7 @@ validateNames.name = function (name) {
 function importComponent(_options) {
     return (tree, _context) => __awaiter(this, void 0, void 0, function* () {
         let config;
+        const chainsOps = [];
         if (tree.exists(".figma-relay")) {
             config = tree.readJson(".figma-relay");
         }
@@ -104,7 +105,43 @@ function importComponent(_options) {
         const workspace = yield (0, workspace_1.getWorkspace)(tree);
         const project = workspace.projects.get("demo");
         const srcRoot = project === null || project === void 0 ? void 0 : project.sourceRoot;
-        const componentTransforms = yield (0, figma_1.getComponent)((0, path_1.join)(srcRoot, "assets", "figma-relay"), "/assets/figma-relay", fileKey, config.token);
+        const transformResult = yield (0, figma_1.getComponent)((0, path_1.join)(srcRoot, "assets", "figma-relay"), "/assets/figma-relay", fileKey, config.token);
+        const componentTransforms = transformResult.components;
+        const componentSets = transformResult.componentSets;
+        for (let componentSet of componentSets) {
+            console.log("Component set", componentSet.original.name);
+            console.log(core_1.strings.dasherize(componentSet.original.name));
+            const subDir = "figma-relay-" +
+                core_1.strings.dasherize(componentSet.original.name) +
+                "/variants/";
+            let htmlContent = "";
+            let componentSetImportClasses = "";
+            let componentSetImportPaths = "";
+            for (let component of componentSet.components) {
+                const options = getComponentOptions(component);
+                chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot, subDir));
+                const tagName = "figma-relay-" +
+                    core_1.strings.dasherize(component.renderNode.name) +
+                    "-component";
+                htmlContent += `<${tagName}></${tagName}>`;
+                const className = core_1.strings.classify(component.renderNode.name) + "Component";
+                componentSetImportClasses += className + ",";
+                const n = "figma-relay-" + core_1.strings.dasherize(component.renderNode.name);
+                const i = `import { ${className} } from './variants/${n}/${n}.component';`;
+                componentSetImportPaths += i + "\n";
+            }
+            const options = {
+                htmlContent: htmlContent,
+            };
+            options.css = "";
+            options.inputs = [];
+            options.inputString = "";
+            options.outputString = "";
+            (options.name = componentSet.original.name.split(" ").join("")),
+                (options.componentSetImportPaths = componentSetImportPaths);
+            options.componentSetImportClasses = componentSetImportClasses;
+            chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot));
+        }
         const questions = [
             {
                 message: "Which components do you want to import/update",
@@ -114,7 +151,6 @@ function importComponent(_options) {
             },
         ];
         const answer = yield inquirer.prompt(questions);
-        const chainsOps = [];
         for (let component of componentTransforms) {
             if (answer.components.includes(component.renderNode.name)) {
                 const options = getComponentOptions(component);
@@ -125,10 +161,12 @@ function importComponent(_options) {
     });
 }
 exports.importComponent = importComponent;
-function addFiles(options, outDir) {
+function addFiles(options, outDir, subDir) {
     return (0, schematics_1.mergeWith)((0, schematics_1.apply)((0, schematics_1.url)(`./files`), [
         (0, schematics_1.template)(Object.assign(Object.assign({ tmpl: "" }, options), core_1.strings)),
-        (0, schematics_1.move)(outDir + "/app/generated/"),
+        subDir
+            ? (0, schematics_1.move)(outDir + "/app/generated/" + subDir)
+            : (0, schematics_1.move)(outDir + "/app/generated/"),
     ]), schematics_1.MergeStrategy.Overwrite);
 }
 function getComponentOptions(component) {
@@ -222,9 +260,9 @@ function getComponentOptions(component) {
             }
         }
         if (renderNode.interactions) {
-            const tapInteraction = renderNode.interactions.find((interaction) => interaction.property === 'tap-handler');
+            const tapInteraction = renderNode.interactions.find((interaction) => interaction.property === "tap-handler");
             if (tapInteraction) {
-                tag.setAttribute('(click)', tapInteraction.name + '.emit($event)');
+                tag.setAttribute("(click)", tapInteraction.name + ".emit($event)");
                 outputs.push(tapInteraction.name);
             }
         }
@@ -255,13 +293,16 @@ function getComponentOptions(component) {
         return (prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`);
     }, "");
     const outputString = outputs.reduce((prev, curr) => {
-        return (prev + `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`);
-    }, '');
+        return (prev +
+            `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`);
+    }, "");
     options.htmlContent = htmlContent;
     options.css = style;
     options.inputs = inputs;
     options.inputString = inputString;
     options.outputString = outputString;
+    options.componentSetImportPaths = "";
+    options.componentSetImportClasses = "";
     options.renderNode = component.renderNode;
     return options;
 }

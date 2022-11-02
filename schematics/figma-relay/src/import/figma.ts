@@ -35,6 +35,10 @@ async function transformComponent(node: any) {
 
     renderNode.originalNode = node;
 
+    if (node.name.includes('=')) { // it is a variant!?
+      node.name = node.name.split('=')[1];
+    }
+
     const nodeID =
       node.name.split(" ").join("-").toLowerCase() +
       "-" +
@@ -289,6 +293,8 @@ export async function getComponent(
     geometry: "paths",
   });
 
+  console.log(file);
+
   ensureDirSync(assetDir);
   const imageFills = await api.getImageFills(fileKey);
   if (imageFills.meta) {
@@ -305,10 +311,30 @@ export async function getComponent(
     (child: Node) => child.type === "COMPONENT"
   );
 
+  const componentSets = canvases[0].children.filter(
+    (child: Node) => child.type === "COMPONENT_SET"
+  );
+
+  const transformedComponentSets = [];
+  for (let componentSet of componentSets) {
+    const set: any = {
+      components: [],
+      original: componentSet
+    }
+    for (let component of (componentSet as any).children) {
+      const transformResult = await transformComponent(component);
+      set.components.push(transformResult);
+    }
+    transformedComponentSets.push(set);
+  }
+
   const componentTransforms = [];
   for (let component of components) {
     const transformResult = await transformComponent(component);
     componentTransforms.push(transformResult);
   }
-  return componentTransforms;
+  return {
+    components: componentTransforms,
+    componentSets: transformedComponentSets
+  };
 }

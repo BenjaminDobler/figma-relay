@@ -42,6 +42,7 @@ validateNames.name = function (name: string) {
 export function importComponent(_options: any): Rule {
   return async (tree: Tree, _context: SchematicContext) => {
     let config: any;
+    const chainsOps = [];
     if (tree.exists(".figma-relay")) {
       config = tree.readJson(".figma-relay");
     } else {
@@ -88,12 +89,64 @@ export function importComponent(_options: any): Rule {
 
     const srcRoot = project?.sourceRoot as string;
 
-    const componentTransforms = await getComponent(
+    const transformResult = await getComponent(
       join(srcRoot, "assets", "figma-relay"),
       "/assets/figma-relay",
       fileKey,
       config.token
     );
+
+    const componentTransforms = transformResult.components;
+    const componentSets = transformResult.componentSets;
+
+    for (let componentSet of componentSets) {
+      console.log("Component set", componentSet.original.name);
+      console.log(strings.dasherize(componentSet.original.name));
+      const subDir =
+        "figma-relay-" +
+        strings.dasherize(componentSet.original.name) +
+        "/variants/";
+
+      let htmlContent = "";
+
+      let componentSetImportClasses = "";
+      let componentSetImportPaths = "";
+
+      for (let component of componentSet.components) {
+        const options = getComponentOptions(component);
+        chainsOps.push(
+          addFiles(options, project?.sourceRoot as string, subDir)
+        );
+        const tagName =
+          "figma-relay-" +
+          strings.dasherize(component.renderNode.name) +
+          "-component";
+        htmlContent += `<${tagName}></${tagName}>`;
+
+        const className =
+          strings.classify(component.renderNode.name) + "Component";
+        componentSetImportClasses += className + ",";
+
+        const n =
+          "figma-relay-" + strings.dasherize(component.renderNode.name);
+        const i = `import { ${className} } from './variants/${n}/${n}.component';`;
+
+        componentSetImportPaths += i + "\n";
+      }
+
+      const options: any = {
+        htmlContent: htmlContent,
+      };
+      options.css = "";
+      options.inputs = [];
+      options.inputString = "";
+      options.outputString = "";
+      (options.name = componentSet.original.name.split(" ").join("")),
+        (options.componentSetImportPaths = componentSetImportPaths);
+      options.componentSetImportClasses = componentSetImportClasses;
+
+      chainsOps.push(addFiles(options, project?.sourceRoot as string));
+    }
 
     const questions = [
       {
@@ -105,7 +158,6 @@ export function importComponent(_options: any): Rule {
     ];
     const answer = await inquirer.prompt(questions);
 
-    const chainsOps = [];
     for (let component of componentTransforms) {
       if (answer.components.includes(component.renderNode.name)) {
         const options = getComponentOptions(component);
@@ -116,7 +168,7 @@ export function importComponent(_options: any): Rule {
   };
 }
 
-function addFiles(options: any, outDir: string) {
+function addFiles(options: any, outDir: string, subDir?: string) {
   return mergeWith(
     apply(url(`./files`), [
       template({
@@ -124,7 +176,9 @@ function addFiles(options: any, outDir: string) {
         ...options,
         ...strings,
       }),
-      move(outDir + "/app/generated/"),
+      subDir
+        ? move(outDir + "/app/generated/" + subDir)
+        : move(outDir + "/app/generated/"),
     ]),
     MergeStrategy.Overwrite
   );
@@ -155,7 +209,7 @@ function getComponentOptions(component: any) {
             `[style.${input.bindingName}]`,
             `${input.name} + '${input.bindingUnit}'`
           );
-        } else if(input.bindingFunction) {
+        } else if (input.bindingFunction) {
           tag.setAttribute(
             `[style.${input.bindingName}]`,
             input.bindingFunction(input.name)
@@ -240,11 +294,12 @@ function getComponentOptions(component: any) {
       }
     }
 
-
     if (renderNode.interactions) {
-    const tapInteraction = renderNode.interactions.find((interaction:any)=>interaction.property === 'tap-handler');
+      const tapInteraction = renderNode.interactions.find(
+        (interaction: any) => interaction.property === "tap-handler"
+      );
       if (tapInteraction) {
-        tag.setAttribute('(click)', tapInteraction.name + '.emit($event)');
+        tag.setAttribute("(click)", tapInteraction.name + ".emit($event)");
         outputs.push(tapInteraction.name);
       }
     }
@@ -284,17 +339,20 @@ function getComponentOptions(component: any) {
     );
   }, "");
 
-  const outputString = outputs.reduce((prev: string, curr: string)=>{
+  const outputString = outputs.reduce((prev: string, curr: string) => {
     return (
-      prev + `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`
+      prev +
+      `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`
     );
-  }, '');
+  }, "");
 
   options.htmlContent = htmlContent;
   options.css = style;
   options.inputs = inputs;
   options.inputString = inputString;
   options.outputString = outputString;
+  options.componentSetImportPaths = "";
+  options.componentSetImportClasses = "";
 
   options.renderNode = component.renderNode;
   return options;

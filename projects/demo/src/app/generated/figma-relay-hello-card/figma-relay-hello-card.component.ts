@@ -1,6 +1,7 @@
 import { Component, Input, Output, OnInit, EventEmitter } from '@angular/core';
 
 @Component({
+  standalone: true,
 	selector: 'figma-relay-hello-card-component',
 	templateUrl: './figma-relay-hello-card.component.html',
 	styleUrls: ['./figma-relay-hello-card.component.scss'],
