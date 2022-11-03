@@ -137,7 +137,7 @@ function importComponent(_options) {
                 console.log(component.renderNode.parameters);
                 console.log(options.inputs);
                 options.inputs.forEach((inp) => {
-                    if (!allInputs.find(input => input.name === inp.name)) {
+                    if (!allInputs.find((input) => input.name === inp.name)) {
                         allInputs.push(inp);
                     }
                 });
@@ -154,8 +154,8 @@ function importComponent(_options) {
             options.outputString = '';
             options.typeDefinitions = `export type ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames.join("' | '")}';`;
             options.variantProperty = `@Input()\n${variantPropertyName}: ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames[0]}'`;
-            console.log(options.typeDefinitions);
-            (options.name = componentSet.original.name.split(' ').join('')), (options.componentSetImportPaths = componentSetImportPaths);
+            options.name = componentSet.original.name;
+            options.componentSetImportPaths = componentSetImportPaths;
             options.componentSetImportClasses = componentSetImportClasses;
             chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot));
         }
