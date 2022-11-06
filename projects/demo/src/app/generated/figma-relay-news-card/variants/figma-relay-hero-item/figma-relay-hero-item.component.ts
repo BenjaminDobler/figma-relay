@@ -20,18 +20,20 @@ import { CommonModule } from '@angular/common';
 })
 export class HeroItemComponent implements OnInit {
 
+
+    
     
 
-
+    
     @Input()
-    borderRadius:number = 24; 
+    borderRadius:number = 24;
+    
     @Input()
-    backgroundColor:string = 'rgba(61, 78,95, 1)'; 
+    backgroundColor:string = 'rgba(61, 78,95, 1)';
+    
     @Input()
-    thumbnail:string = '/assets/figma-relay/3356fabcec2fcadc5635a989858571e891924c61.png'; 
-
-
-
+    thumbnail:string = '/assets/figma-relay/3356fabcec2fcadc5635a989858571e891924c61.png';
+    
 
 
     constructor() { }

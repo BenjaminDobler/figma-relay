@@ -23,19 +23,23 @@ export type ViewType = 'hero-item' | 'article-item' | 'audio-item';
 })
 export class NewsCardComponent implements OnInit {
 
+
+    
+    
+
+    
     @Input()
-view: ViewType = 'hero-item'
-
-
+    borderRadius:number = 24;
+    
     @Input()
-    borderRadius:number = 24; 
+    backgroundColor:string = 'rgba(61, 78,95, 1)';
+    
     @Input()
-    backgroundColor:string = 'rgba(61, 78,95, 1)'; 
+    thumbnail:string = '/assets/figma-relay/3356fabcec2fcadc5635a989858571e891924c61.png';
+    
     @Input()
-    thumbnail:string = '/assets/figma-relay/3356fabcec2fcadc5635a989858571e891924c61.png'; 
-
-
-
+    view:ViewType = 'hero-item';
+    
 
 
     constructor() { }

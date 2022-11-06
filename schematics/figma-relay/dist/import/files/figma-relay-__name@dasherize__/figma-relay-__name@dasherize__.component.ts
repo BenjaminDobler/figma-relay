@@ -20,12 +20,17 @@ import { CommonModule } from '@angular/common';
 })
 export class <%= classify(name) %>Component implements OnInit {
 
-    <%= variantProperty %>
 
+    <% outputs.forEach(function(output){ %>
+    @Output()
+    <%= output.name %>:EventEmitter<<%= output.type %>> = new EventEmitter<<%= output.type %>>();
+    <% }) %>
+    
 
-<%= inputString %>
-
-<%= outputString %>
+    <% inputs.forEach(function(input){ %>
+    @Input()
+    <%= input.name %>:<%= input.type %> = <%= input.default %>;
+    <% }) %>
 
 
     constructor() { }

@@ -1,12 +1,7 @@
-export interface ColorStyle {
-    r: number;
-    g: number;
-    b: number;
-    a: number;
-}
+import { RenderNode } from './types';
 export declare function getComponent(aDir: string, relativeADir: string, fileKey: string, token: string): Promise<{
     components: {
-        renderNode: any;
+        renderNode: RenderNode;
     }[];
     componentSets: any[];
 }>;

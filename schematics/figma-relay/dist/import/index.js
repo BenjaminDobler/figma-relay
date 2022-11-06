@@ -41,9 +41,23 @@ const inquirer = __importStar(require("inquirer"));
 const core_1 = require("@angular-devkit/core");
 const workspace_1 = require("@schematics/angular/utility/workspace");
 const figma_1 = require("./figma");
+const jsdom_1 = require("jsdom");
+const util_1 = require("./util");
 const path_1 = require("path");
 const prettier_1 = __importDefault(require("prettier"));
+const validateNames = require('jsdom/lib/jsdom/living/helpers/validate-names.js');
 const stringsHelper = require('jsdom/lib/jsdom/living/helpers/strings.js');
+const defaultOptions = {
+    name: '',
+    outputs: [],
+    inputs: [],
+    htmlContent: '',
+    componentSetImportClasses: '',
+    componentSetImportPaths: '',
+    typeDefinitions: '',
+    css: '',
+    renderNode: {},
+};
 const asciiLowercase_ = stringsHelper.asciiLowercase;
 stringsHelper.asciiLowercase = function (name) {
     if (name.startsWith('[')) {
@@ -51,8 +65,6 @@ stringsHelper.asciiLowercase = function (name) {
     }
     return asciiLowercase_(name);
 };
-const jsdom_1 = require("jsdom");
-const validateNames = require('jsdom/lib/jsdom/living/helpers/validate-names.js');
 const name_ = validateNames.name;
 validateNames.name = function (name) {
     try {
@@ -62,7 +74,7 @@ validateNames.name = function (name) {
 };
 // You don't have to export the function as default. You can also have more than one rule factory
 // per file.
-function importComponent(_options) {
+function importComponent(schematicOptions) {
     return (tree, _context) => __awaiter(this, void 0, void 0, function* () {
         let config;
         const chainsOps = [];
@@ -92,7 +104,7 @@ function importComponent(_options) {
         if (!config.file) {
             const fileQustion = [
                 {
-                    message: 'Please provide the link to your Figma file.',
+                    message: 'Please provide the link to a Figma file.',
                     name: 'file',
                 },
             ];
@@ -103,26 +115,56 @@ function importComponent(_options) {
         let fileKey = config.file.substring(27);
         fileKey = fileKey.substring(0, fileKey.indexOf('/'));
         const workspace = yield (0, workspace_1.getWorkspace)(tree);
-        const project = workspace.projects.get('demo');
+        const project = workspace.projects.get(schematicOptions.project);
         const srcRoot = project === null || project === void 0 ? void 0 : project.sourceRoot;
-        const transformResult = yield (0, figma_1.getComponent)((0, path_1.join)(srcRoot, 'assets', 'figma-relay'), '/assets/figma-relay', fileKey, config.token);
+        const artifacts = yield getArtifacts(srcRoot, fileKey, config.token);
+        const questions = [
+            {
+                message: 'Which components do you want to import/update',
+                type: 'checkbox',
+                name: 'components',
+                choices: artifacts.map((artifact) => artifact.name),
+            },
+        ];
+        const answer = yield inquirer.prompt(questions);
+        const artifactsToBuild = artifacts.filter((artifact) => answer.components.includes(artifact.name));
+        artifactsToBuild.forEach((artifact) => {
+            var _a;
+            (_a = artifact.children) === null || _a === void 0 ? void 0 : _a.forEach((childArtifact) => {
+                chainsOps.push(addFiles(childArtifact.options, childArtifact.root, childArtifact.subDir));
+            });
+            chainsOps.push(addFiles(artifact.options, artifact.root, artifact.subDir));
+        });
+        return (0, schematics_1.chain)(chainsOps);
+    });
+}
+exports.importComponent = importComponent;
+function addFiles(options, outDir, subDir) {
+    return (0, schematics_1.mergeWith)((0, schematics_1.apply)((0, schematics_1.url)(`./files`), [
+        (0, schematics_1.template)(Object.assign(Object.assign({ tmpl: '' }, options), core_1.strings)),
+        subDir ? (0, schematics_1.move)(outDir + '/app/generated/' + subDir) : (0, schematics_1.move)(outDir + '/app/generated/'),
+    ]), schematics_1.MergeStrategy.Overwrite);
+}
+function getArtifacts(root, fileKey, token) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const artifacts = [];
+        const transformResult = yield (0, figma_1.getComponent)((0, path_1.join)(root, 'assets', 'figma-relay'), '/assets/figma-relay', fileKey, token);
         const componentTransforms = transformResult.components;
         const componentSets = transformResult.componentSets;
         for (let componentSet of componentSets) {
-            console.log('Component set', componentSet.original.name);
-            console.log(core_1.strings.dasherize(componentSet.original.name));
+            const componentSetArtifact = { type: 'ComponentSet', children: [], name: componentSet.original.name, root };
             const subDir = 'figma-relay-' + core_1.strings.dasherize(componentSet.original.name) + '/variants/';
             let htmlContent = '';
             let componentSetImportClasses = '';
             let componentSetImportPaths = '';
             const firstComponentName = componentSet.original.children[0].originalName;
-            console.log(firstComponentName);
             const variantPropertyName = firstComponentName.split('=')[0];
             const variantNames = [];
             const allInputs = [];
             for (let component of componentSet.components) {
+                const componentArtifact = { type: 'Component', name: component.renderNode.name, root, subDir };
                 const options = getComponentOptions(component);
-                chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot, subDir));
                 const tagName = 'figma-relay-' + core_1.strings.dasherize(component.renderNode.name) + '-component';
                 const inputString = options.inputs.reduce((prev, input) => {
                     return prev + `[${input.name}]="${input.name}" `;
@@ -134,55 +176,37 @@ function importComponent(_options) {
                 const n = 'figma-relay-' + core_1.strings.dasherize(component.renderNode.name);
                 const i = `import { ${className} } from './variants/${n}/${n}.component';`;
                 componentSetImportPaths += i + '\n';
-                console.log(component.renderNode.parameters);
-                console.log(options.inputs);
                 options.inputs.forEach((inp) => {
                     if (!allInputs.find((input) => input.name === inp.name)) {
                         allInputs.push(inp);
                     }
                 });
+                componentArtifact.options = options;
+                (_a = componentSetArtifact.children) === null || _a === void 0 ? void 0 : _a.push(componentArtifact);
             }
-            const options = {
-                htmlContent: htmlContent,
-            };
-            const inputString = allInputs.reduce((prev, curr) => {
-                return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
-            }, '');
-            options.css = '';
-            options.inputs = [];
-            options.inputString = inputString;
-            options.outputString = '';
-            options.typeDefinitions = `export type ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames.join("' | '")}';`;
-            options.variantProperty = `@Input()\n${variantPropertyName}: ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames[0]}'`;
-            options.name = componentSet.original.name;
-            options.componentSetImportPaths = componentSetImportPaths;
-            options.componentSetImportClasses = componentSetImportClasses;
-            chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot));
+            const componentSetOptions = Object.assign({}, defaultOptions);
+            allInputs.push({
+                name: variantPropertyName,
+                type: core_1.strings.classify(variantPropertyName) + 'Type',
+                default: `'${variantNames[0]}'`,
+            });
+            componentSetOptions.htmlContent = htmlContent;
+            componentSetOptions.css = '';
+            componentSetOptions.inputs = allInputs;
+            componentSetOptions.typeDefinitions = `export type ${core_1.strings.classify(variantPropertyName)}Type = '${variantNames.join("' | '")}';`;
+            componentSetOptions.name = componentSet.original.name;
+            componentSetOptions.componentSetImportPaths = componentSetImportPaths;
+            componentSetOptions.componentSetImportClasses = componentSetImportClasses;
+            componentSetArtifact.options = componentSetOptions;
+            artifacts.push(componentSetArtifact);
         }
-        const questions = [
-            {
-                message: 'Which components do you want to import/update',
-                type: 'checkbox',
-                name: 'components',
-                choices: componentTransforms.map((c) => c.renderNode.name),
-            },
-        ];
-        const answer = yield inquirer.prompt(questions);
         for (let component of componentTransforms) {
-            if (answer.components.includes(component.renderNode.name)) {
-                const options = getComponentOptions(component);
-                chainsOps.push(addFiles(options, project === null || project === void 0 ? void 0 : project.sourceRoot));
-            }
+            const options = getComponentOptions(component);
+            const componentArtifact = { name: component.renderNode.name, type: 'Component', options, root };
+            artifacts.push(componentArtifact);
         }
-        return (0, schematics_1.chain)(chainsOps);
+        return artifacts;
     });
-}
-exports.importComponent = importComponent;
-function addFiles(options, outDir, subDir) {
-    return (0, schematics_1.mergeWith)((0, schematics_1.apply)((0, schematics_1.url)(`./files`), [
-        (0, schematics_1.template)(Object.assign(Object.assign({ tmpl: '' }, options), core_1.strings)),
-        subDir ? (0, schematics_1.move)(outDir + '/app/generated/' + subDir) : (0, schematics_1.move)(outDir + '/app/generated/'),
-    ]), schematics_1.MergeStrategy.Overwrite);
 }
 function getComponentOptions(component) {
     const inputs = [];
@@ -191,7 +215,7 @@ function getComponentOptions(component) {
     let dom = new jsdom_1.JSDOM('');
     const document = dom.window.document;
     const getContent = (renderNode) => {
-        var _a;
+        var _a, _b, _c;
         const tag = document.createElement('div');
         tag.classList.add(renderNode.id);
         renderNode.inputs.forEach((input) => {
@@ -209,56 +233,20 @@ function getComponentOptions(component) {
                 }
             }
         });
-        if (renderNode.shapes) {
-            renderNode.shapes.forEach((shape) => {
-                let svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svgElement.setAttribute('width', '413');
-                svgElement.setAttribute('height', '392');
-                svgElement.setAttribute('viewBox', '0 0 413 392');
-                let path = document.createElement('path');
-                path.setAttribute('d', shape.path);
-                path.setAttribute('fill', '#00ff00'); // TODO find real value
-                svgElement.appendChild(path);
-                if (shape.imagePattern) {
-                    const patternID = 'pattern0';
-                    const imageID = 'image0';
-                    let defs = document.createElement('defs');
-                    let pattern = document.createElement('pattern');
-                    pattern.setAttribute('id', patternID);
-                    pattern.setAttribute('patternContentUnits', 'objectBoundingBox');
-                    pattern.setAttribute('width', '1');
-                    pattern.setAttribute('height', '1');
-                    path.setAttribute('fill', `url(#${patternID})`);
-                    defs.appendChild(pattern);
-                    let use = document.createElement('use');
-                    use.setAttribute('xlink:href', '#' + imageID);
-                    pattern.appendChild(use);
-                    let image = document.createElement('image');
-                    image.setAttribute('id', imageID);
-                    image.setAttribute('xlink:href', shape.imagePattern.url);
-                    image.setAttribute('width', '378'); // TODO find real value
-                    image.setAttribute('height', '378'); // TODO find real value
-                    defs.appendChild(image);
-                    svgElement.appendChild(defs);
-                }
-                else {
-                    path.setAttribute('fill', shape.fillColor);
-                }
-                tag.appendChild(svgElement);
-            });
-        }
-        if (renderNode.children) {
-            renderNode.children.forEach((childNode) => {
-                const childTag = getContent(childNode);
-                tag.appendChild(childTag);
-            });
-        }
+        (_a = renderNode.shapes) === null || _a === void 0 ? void 0 : _a.forEach((shape) => {
+            const svgElement = (0, util_1.shapeToSVG)(document, shape);
+            tag.appendChild(svgElement);
+        });
+        (_b = renderNode.children) === null || _b === void 0 ? void 0 : _b.forEach((childNode) => {
+            const childTag = getContent(childNode);
+            tag.appendChild(childTag);
+        });
         if (renderNode.type === 'TEXT') {
             if (renderNode.parameters && renderNode.parameters.find((p) => p.property === 'text-content')) {
                 const param = renderNode.parameters.find((p) => p.property === 'text-content');
                 tag.textContent = '{{' + param.name + '}}';
                 let textType = 'string';
-                if ((_a = param.description) === null || _a === void 0 ? void 0 : _a.startsWith('type:')) {
+                if ((_c = param.description) === null || _c === void 0 ? void 0 : _c.startsWith('type:')) {
                     textType = param.description.split(':')[1];
                 }
                 inputs.push({
@@ -275,7 +263,10 @@ function getComponentOptions(component) {
             const tapInteraction = renderNode.interactions.find((interaction) => interaction.property === 'tap-handler');
             if (tapInteraction) {
                 tag.setAttribute('(click)', tapInteraction.name + '.emit($event)');
-                outputs.push(tapInteraction.name);
+                outputs.push({
+                    name: tapInteraction.name,
+                    type: 'any',
+                });
             }
         }
         return tag;
@@ -298,24 +289,13 @@ function getComponentOptions(component) {
         }
     };
     getClass(component.renderNode);
-    const options = {
-        name: component.renderNode.name.split(' ').join(''),
-    };
-    const inputString = inputs.reduce((prev, curr) => {
-        return prev + `    @Input()\n    ${curr.name}:${curr.type} = ${curr.default}; \n`;
-    }, '');
-    const outputString = outputs.reduce((prev, curr) => {
-        return prev + `    @Output()\n    ${curr}:EventEmitter<any> = new EventEmitter<any>(); \n`;
-    }, '');
-    options.htmlContent = htmlContent;
+    const options = Object.assign({}, defaultOptions);
+    (options.name = component.renderNode.name.split(' ').join('')), (options.htmlContent = htmlContent);
     options.css = style;
     options.inputs = inputs;
-    options.inputString = inputString;
-    options.outputString = outputString;
     options.componentSetImportPaths = '';
     options.componentSetImportClasses = '';
     options.typeDefinitions = ``;
-    options.variantProperty = ``;
     options.renderNode = component.renderNode;
     return options;
 }

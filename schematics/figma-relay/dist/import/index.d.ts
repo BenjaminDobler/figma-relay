@@ -1,2 +1,8 @@
 import { Rule } from '@angular-devkit/schematics';
-export declare function importComponent(_options: any): Rule;
+interface ImportOptions {
+    project: string;
+    componentPrefix: string;
+    token: string;
+}
+export declare function importComponent(schematicOptions: ImportOptions): Rule;
+export {};

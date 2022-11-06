@@ -20,18 +20,20 @@ import { CommonModule } from '@angular/common';
 })
 export class ArticleItemComponent implements OnInit {
 
+
+    
     
 
-
+    
     @Input()
-    borderRadius:number = 24; 
+    borderRadius:number = 24;
+    
     @Input()
-    backgroundColor:string = 'rgba(61, 78,95, 1)'; 
+    backgroundColor:string = 'rgba(61, 78,95, 1)';
+    
     @Input()
-    thumbnail:string = '/assets/figma-relay/727ab53561db2ff83d4094352e20dfff0538f8bb.png'; 
-
-
-
+    thumbnail:string = '/assets/figma-relay/727ab53561db2ff83d4094352e20dfff0538f8bb.png';
+    
 
 
     constructor() { }
