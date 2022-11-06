@@ -72,10 +72,9 @@ validateNames.name = function (name) {
     }
     catch (_a) { }
 };
-// You don't have to export the function as default. You can also have more than one rule factory
-// per file.
 function importComponent(schematicOptions) {
     return (tree, _context) => __awaiter(this, void 0, void 0, function* () {
+        var _a;
         let config;
         const chainsOps = [];
         if (tree.exists('.figma-relay')) {
@@ -91,17 +90,9 @@ function importComponent(schematicOptions) {
             ];
             const answer = yield inquirer.prompt(question);
             config = { token: answer.token };
-            const fileQustion = [
-                {
-                    message: 'Please provide the link to your Figma file.',
-                    name: 'file',
-                },
-            ];
-            const fileAnswer = yield inquirer.prompt(fileQustion);
-            config.file = fileAnswer.file;
             tree.create('.figma-relay', JSON.stringify(config));
         }
-        if (!config.file) {
+        if (!(((_a = config.files) === null || _a === void 0 ? void 0 : _a.length) > 0)) {
             const fileQustion = [
                 {
                     message: 'Please provide the link to a Figma file.',
@@ -109,15 +100,19 @@ function importComponent(schematicOptions) {
                 },
             ];
             const fileAnswer = yield inquirer.prompt(fileQustion);
-            config.file = fileAnswer.file;
+            config.files = [{ url: fileAnswer.file }];
             tree.overwrite('.figma-relay', JSON.stringify(config));
         }
-        let fileKey = config.file.substring(27);
-        fileKey = fileKey.substring(0, fileKey.indexOf('/'));
         const workspace = yield (0, workspace_1.getWorkspace)(tree);
         const project = workspace.projects.get(schematicOptions.project);
         const srcRoot = project === null || project === void 0 ? void 0 : project.sourceRoot;
-        const artifacts = yield getArtifacts(srcRoot, fileKey, config.token);
+        let artifacts = [];
+        for (let file of config.files) {
+            let fileKey = file.url.substring(27);
+            fileKey = fileKey.substring(0, fileKey.indexOf('/'));
+            const a = yield getArtifacts(srcRoot, fileKey, config.token);
+            artifacts.push(...a);
+        }
         const questions = [
             {
                 message: 'Which components do you want to import/update',
@@ -290,12 +285,10 @@ function getComponentOptions(component) {
     };
     getClass(component.renderNode);
     const options = Object.assign({}, defaultOptions);
-    (options.name = component.renderNode.name.split(' ').join('')), (options.htmlContent = htmlContent);
+    options.name = component.renderNode.name.split(' ').join('');
+    options.htmlContent = htmlContent;
     options.css = style;
     options.inputs = inputs;
-    options.componentSetImportPaths = '';
-    options.componentSetImportClasses = '';
-    options.typeDefinitions = ``;
     options.renderNode = component.renderNode;
     return options;
 }

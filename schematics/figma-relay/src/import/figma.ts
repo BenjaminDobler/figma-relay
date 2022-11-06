@@ -256,8 +256,6 @@ export async function getComponent(aDir: string, relativeADir: string, fileKey: 
         geometry: 'paths',
     });
 
-    console.log(file);
-
     ensureDirSync(assetDir);
     const imageFills = await api.getImageFills(fileKey);
     if (imageFills.meta) {

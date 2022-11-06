@@ -260,7 +260,6 @@ function getComponent(aDir, relativeADir, fileKey, token) {
             plugin_data: relayPluginID,
             geometry: 'paths',
         });
-        console.log(file);
         (0, fs_extra_1.ensureDirSync)(assetDir);
         const imageFills = yield api.getImageFills(fileKey);
         if (imageFills.meta) {
