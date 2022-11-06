@@ -1,4 +1,4 @@
-import { ColorStyle, RenderNodeShape } from './types';
+import { ColorStyle, RenderNodeShape } from '../figma-relay/types';
 
 export const color2Css = (color: ColorStyle) => {
     return `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)},${Math.round(color.b * 255)}, ${color.a})`;

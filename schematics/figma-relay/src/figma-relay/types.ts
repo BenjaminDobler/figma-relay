@@ -67,3 +67,13 @@ export interface RenderNode {
     children?: RenderNode[];
     css?: any;
 }
+
+export interface Artifact {
+    type: 'Component' | 'ComponentSet';
+    children?: Artifact[];
+    root?: string;
+    subDir?: string;
+    options?: ComponentOptions;
+    name?: string;
+    sourceFile?: string;
+}

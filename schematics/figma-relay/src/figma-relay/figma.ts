@@ -1,12 +1,10 @@
-// https://www.figma.com/file/gohZuvON9qmHoSnEYsW5Vo/HelloFigma?node-id=0%3A1
-
 import axios from 'axios';
 import { ensureDirSync, writeFileSync } from 'fs-extra';
 import * as Figma from 'figma-api';
 import { Node, CANVAS } from 'figma-api';
 import { join } from 'path';
 import { RenderNode, RenderNodeShape } from './types';
-import { color2Css } from './util';
+import { color2Css } from '../import/util';
 
 const outDir = './output';
 let assetDir = './output/assets/';
@@ -79,7 +77,7 @@ async function transformComponent(node: any) {
         if (node.type === 'STAR' || node.type === 'REGULAR_POLYGON') {
             if (node.fillGeometry) {
                 const geometry = node.fillGeometry[0];
-                const shape: RenderNodeShape = {path: geometry.path};
+                const shape: RenderNodeShape = { path: geometry.path };
 
                 const imageFill = node.fills.find((fill: any) => fill.type === 'IMAGE');
                 if (imageFill) {
